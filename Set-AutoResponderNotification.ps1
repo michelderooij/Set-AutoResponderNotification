@@ -1,6 +1,6 @@
 <#
     .SYNOPSIS
-    Set-AutoResponder
+    Set-AutoResponderNotification
 
     Michel de Rooij
     michel@eightwone.com
@@ -9,15 +9,14 @@
     ENTIRE RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS
     WITH THE USER.
 
-    Version 1.0, February 17th, 2021
+    Version 1.01, February 17th, 2021
 
     .DESCRIPTION
     This script will set an AutoResponder inbox rule on an Exchange mailbox. This can be used to inform relations and partners sending messages
     to old e-mail addresses after mergers, acquisitions or rebranding.
 
     The autoresponder is configured on the new/migrated mailbox, and will look for messages specifically sent to the previous e-mail address.
-    The autoresponder message can consist of subject and body and an embedded 
-    image if required to customize it further.
+    The autoresponder message can consist of subject and body and an embedded image if required to customize it further.
 
     Usage of the Verbose, Confirm and WhatIf parameters is supported.
 
@@ -32,21 +31,22 @@
     
     For information on installing packages, see https://eightwone.com/2020/10/05/ews-webservices-managed-api)
 
-    Special thanks to Siegfried Jagott from Intellity for idea and testing.
+    Special thanks to Siegfried Jagott from Intellity for the idea and testing.
+    
 
     Revision History
     --------------------------------------------------------------------------------
     1.0     Initial public release
+    1.01    Removed CSVFile parameter
+            Added Begin/Process/End block for pipeline processing
+            Fixed bug in module loading
 
     .PARAMETER Identity
-    Specifies one or more e-mail addresses of mailboxes to process.
+    Specifies one or more e-mail addresses of mailboxes to process. Identity can also be passed through the pipeline (see examples).
 
     .PARAMETER OldMail
     Specifies one or more old e-mail addresses to use when configuring the autoresponder message. When specifying multiple entries,
-    the number of OldMail entries need to match the number of Identity entries.
-
-    .PARAMETER CSVFile
-    Specifies the name of a CSV file to use for processing. The CSV file should contain 2 columns, Identity and OldMail.
+    the number of OldMail entries need to match the number of Identity entries. Like Identity, OldMail is also passable through the pipeline.
 
     .PARAMETER Server
     Exchange Web Services endpoint to use. When ommited, script will attempt to use Autodiscover. By specifying Server, you
@@ -123,140 +123,112 @@
     Specifies if any existing inbox rules with name specified in the template should be overwritten. When omitted, the script will skip processing
     a mailbox if an existing rule is found. Use this when you want to configure the autoresponder only on mailboxes which do not have the rule.
 
+    .PARAMETER TrustAll
+    Specifies if all certificates should be accepted, including self-signed certificates.
+
     .EXAMPLE
     $cred=Get-Credential
     .\Set-AutoResponderNotification.ps1 -Identity michel@contoso.com -OldMail michel@fabrikam.com -Server outlook.office365.com -TemplateFile .\Template.xml -Credential $cred
 
-    Configure autoresponder rule on mailbox of michel@contoso.com, using previous e-mail address michel@fabrikam as inbox rule SendTo predicate. The autoresponder will be set using
-    parameters stored in the template file, and Basic Authentication is used to authenticate.
+    Configure autoresponder rule on mailbox of michel@contoso.com, using previous e-mail address michel@fabrikam as inbox rule SendTo predicate. 
+    The autoresponder will be set using parameters stored in the template file, and credentials are used to perform basic authentication against endpoint.
 
     .EXAMPLE
     $Secret= Read-Host 'Secret' -AsSecureString
     .\Set-AutoResponderNotification.ps1 -Identity michel@contoso.com -OldMail michel@fabrikam.com -Server outlook.office365.com -TemplateFile .\Template.xml -TenantId '1ab81a53-2c16-4f28-98f3-fd251f0459f3' -ClientId 'ea76025c-592d-43f1-91f4-2dec7161cc59' -Secret $Secret
 
-    Configure autoresponder rule on mailbox of michel@contoso.com, using previous e-mail address michel@fabrikam as inbox rule SendTo predicate. The tenant indicated by specified identities is used 
-    to authenticate against, using specified application identity and provided secret. The autoresponder will be set using parameters stored in the template file.
+    Configure autoresponder rule on mailbox of michel@contoso.com, using previous e-mail address michel@fabrikam as inbox rule SendTo predicate. 
+    The tenant indicated by specified identities is used to authenticate against, using specified application identity and provided secret. 
+    The autoresponder will be set using parameters stored in the template file.
 
     .EXAMPLE
     $PfxPwd= Read-Host 'PFX password' -AsSecureString
     .\Set-AutoResponderNotification.ps1 -Identity michel@contoso.com -Server outlook.office365.com -TemplateFile .\Template.xml -TenantId '1ab81a53-2c16-4f28-98f3-fd251f0459f3' -ClientId 'ea76025c-592d-43f1-91f4-2dec7161cc59' -CertificateFile .\AutoResponder.pfx -CertificatePassword $PfxPwd -Clear
 
-    Clear autoresponder rule on mailbox of michel@contoso.com. The tenant indicated by specified identities is used to authenticate against, using specified application identity and provided pfx certificate file and
-    pfx decryption password. The subject to look for will be taken from the specified template file.
+    Clear autoresponder rule on mailbox of michel@contoso.com. The tenant indicated by specified identities is used to authenticate against, 
+    using specified application identity and provided pfx certificate file and pfx decryption password. The subject to look for will be taken 
+    from the specified template file.
 
     .EXAMPLE
-    .\Set-AutoResponderNotification.ps1 -Identity michel@contoso.com -OldMail michel@fabrikam.com -Server outlook.office365.com -Impersonation -TemplateFile .\Template.xml -TenantId '1ab81a53-2c16-4f28-98f3-fd251f0459f3' -ClientId 'ea76025c-592d-43f1-91f4-2dec7161cc59' -Overwrite -CertificateFile .\AutoResponder.pfx -CertificatePassword (ConvertTo-SecureString 'P@ssw0rd' -Force -AsPlainText)
+    Import-CSV -Path Users.csv | .\Set-AutoResponderNotification.ps1 -Server outlook.office365.com -Impersonation -TemplateFile .\Template.xml -TenantId '1ab81a53-2c16-4f28-98f3-fd251f0459f3' -ClientId 'ea76025c-592d-43f1-91f4-2dec7161cc59' -Overwrite -CertificateFile .\AutoResponder.pfx -CertificatePassword (ConvertTo-SecureString 'P@ssw0rd' -Force -AsPlainText)
 
-    Configure autoresponder rule on mailbox of michel@contoso.com using old e-mail address michel@fabrikam as predicate. The tenant indicated by specified identities is used to authenticate against, using specified application identity. The certificate
-    used to authenticate is picked from the personal certificate store by looking for specified thumbprint. The autoresponder will be set using parameters stored in the template file. Any existing inbox rules
-    with the same name will be overwritten.
+    Configure autoresponder rule using Identity/OldMail properties from the CSV file. The tenant specified is authenticated against, 
+    using specified application identity, as well as the certificate from the personal certificate store with the specified thumbprint. 
+    The autoresponder will be set using parameters stored in the template file. Any existing inbox rules with the same name will be overwritten.
 
 #>
 
-[cmdletbinding(SupportsShouldProcess=$true,ConfirmImpact="High")]
+[cmdletbinding( SupportsShouldProcess=$true, ConfirmImpact='High')]
 param(
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearBasic')]
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthSecret')]
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertFile')]
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemBasic')]
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'ClearBasic')]
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'ClearOAuthSecret')]
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'ClearOAuthCertFile')]
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
+    [parameter( Position= 0, Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'ClearOAuthCertThumb')]
     [string[]]$Identity,
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
+    [parameter( Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemBasic')]
+    [parameter( Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
+    [parameter( Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
+    [parameter( Mandatory= $true, ValueFromPipelineByPropertyName= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
     [string[]]$OldMail,
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputBasic')]
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearBasic')]
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthSecret')]
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthSecret')]
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertFile')]
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertFile')]
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertThumb')]
-    [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
-    [ValidateScript({ Test-Path -Path $_ -PathType Leaf})]
-    [string]$CSVFile,
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertThumb')]
     [string]$Server,
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertThumb')]
     [switch]$Impersonation,
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemBasic')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearBasic')]
     [System.Management.Automation.PsCredential]$Credentials,
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthSecret')]
     [System.Security.SecureString]$Secret,
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
     [String]$CertificateThumbprint,
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertFile')]
     [ValidateScript({ Test-Path -Path $_ -PathType Leaf})]
     [String]$CertificateFile,
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertFile')]
     [System.Security.SecureString]$CertificatePassword,
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
     [string]$TenantId,
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
     [string]$ClientId,
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputBasic')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearBasic')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthSecret')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertFile')]
     [parameter( Mandatory= $true, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $true, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
     [ValidateScript({ Test-Path -Path $_ -PathType Leaf})]
     [string]$TemplateFile,
@@ -266,31 +238,23 @@ param(
     [parameter( Mandatory= $true, ParameterSetName= 'ClearOAuthCertThumb')]
     [switch]$Clear,
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [switch]$Overwrite,
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemBasic')]
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearBasic')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthSecret')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthSecret')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertFile')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertFile')]
     [parameter( Mandatory= $false, ParameterSetName= 'SingleItemOAuthCertThumb')] 
-    [parameter( Mandatory= $false, ParameterSetName= 'CSVInputOAuthCertThumb')]
     [parameter( Mandatory= $false, ParameterSetName= 'ClearOAuthCertThumb')]
     [switch]$TrustAll
 )
 #Requires -Version 3.0
 
-process {
+begin {
 
     # Errors
     $ERR_DLLNOTFOUND                         = 1000
@@ -309,7 +273,7 @@ process {
 
         $AbsoluteFileName= Join-Path -Path $PSScriptRoot -ChildPath $FileName
         If ( Test-Path $AbsoluteFileName) {
-            Unblock-File -Path $absoluteFileName
+            # OK
         }
         Else {
            If( $Package) {
@@ -320,6 +284,7 @@ process {
                 }
             }
         }
+
         If( $absoluteFileName) {
             $ModLoaded= Get-Module -Name $Name -ErrorAction SilentlyContinue
             If( $ModLoaded) {
@@ -328,10 +293,7 @@ process {
             Else {
                 Write-Verbose ('Loading module {0}' -f $absoluteFileName)
                 try {
-                    Import-Module -Name $absoluteFileName -Global -Force 
-                    If( $validateObjName) {
-                        $null= New-Object -TypeName $validateObjName
-                    }
+                    Import-Module -Name $absoluteFileName -Global -Force
                 }
                 catch {
                     Write-Error ('Problem loading module {0}: {1}' -f $Name, $error[0])
@@ -341,7 +303,15 @@ process {
                 If( $ModLoaded) {
                     Write-Verbose ('Module {0} v{1} loaded' -f $ModLoaded.Name, $ModLoaded.Version)
                 }
-
+                Try {
+                    If( $validateObjName) {
+                        $null= New-Object -TypeName $validateObjName
+                    }
+                }
+                Catch {
+                    Write-Error ('Problem initializing test-object from module {0}: {1}' -f $Name, $error[0])
+                    Exit $ERR_DLLLOADING
+                }
             }
        }
        Else {
@@ -377,12 +347,8 @@ process {
         }
     }
 
-    ##################################################
-    # Main
-    ##################################################
-
     Import-ModuleDLL -Name 'Microsoft.Exchange.WebServices' -FileName 'Microsoft.Exchange.WebServices.dll' -Package 'Exchange.WebServices.Managed.Api' -validateObjName 'Microsoft.Exchange.WebServices.Data.ExchangeVersion'
-    Import-ModuleDLL -Name 'Microsoft.Identity.Client' -FileName 'Microsoft.Identity.Client.dll' -Package 'Microsoft.Identity.Client' -validateObjName 'Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior'
+    Import-ModuleDLL -Name 'Microsoft.Identity.Client' -FileName 'Microsoft.Identity.Client.dll' -Package 'Microsoft.Identity.Client' -validateObjName 'Microsoft.Identity.Client.ConfidentialClientApplicationBuilder'
 
     Try  {
         $Config= ([xml](Get-Content -Path $TemplateFile)).Config
@@ -413,33 +379,6 @@ process {
     Else {
         Write-Error ( 'Required Rule element not found in template file.')
         Exit $ERR_TEMPLATECONFIG
-    }
-
-
-    If( $CSVFile) {
-        Write-Verbose ('Reading entries from CSV file {0}'  -f $CSVFile)
-        $Entries= Import-CSV -Path $CSVFile
-        If($null -eq $Entries[0].Identity -eq $Entries[0].NewIdentity) {
-            Write-Error ('CSV input file empty or malformed; use properties Identity and NewIdentity')
-        }
-    }
-    Else {
-        $Entries= [System.Collections.ArrayList]@()
-        $i=0; 
-        ForEach($Entry in $Identity) {
-            Try {
-                $OldEntry= $OldMail[ $i]
-            }
-            Catch {
-                $OldEntry= $Identity[ $i]
-            }
-            $obj=[pscustomobject]@{
-                Identity= $Entry
-                OldMail= $OldEntry
-            }
-            $Entries.Add( $obj) | Out-Null
-            $i++
-        }
     }
 
     $ExchangeVersion= [Microsoft.Exchange.WebServices.Data.ExchangeVersion]::Exchange2010_SP2
@@ -510,12 +449,28 @@ process {
         Set-SSLVerification -Disable
     }
 
-    ForEach( $Item in $Entries) {
+}
 
-        $ID= $Item.Identity
-        $OldMail= $Item.OldMail
+Process {
 
-        Write-Host ('Processing mailbox {0}' -f $ID)
+    $Entries= @{}
+    $i=0
+    ForEach($Entry in $Identity) {
+        Try {
+            $Entries[ $Entry]= $OldMail[ $i]
+        }
+        Catch {
+            $Entries[ $Entry]= $Entry
+        }
+        $i++
+    }
+
+    ForEach( $Item in $Entries.getEnumerator()) {
+
+        $ID= $Item.Name
+        $OldID= $Item.Value
+
+        Write-Host ('Processing mailbox {0}, old e-mail identity {1}' -f $ID, $OldID)
 
         If( $Impersonation) {
             Write-Verbose ('Using {0} for impersonation' -f $ID)
@@ -543,7 +498,7 @@ process {
             $ErrorActionPreference= 'Continue'
             Write-Verbose 'Using EWS endpoint {0}' -f $EwsService.Url
         } 
-    
+
         #This is where magic starts..
         try {
             $null= [Microsoft.Exchange.WebServices.Data.Folder]::Bind( $EwsService, [Microsoft.Exchange.WebServices.Data.WellknownFolderName]::MsgFolderRoot)
@@ -598,7 +553,7 @@ process {
                 $Body= $Config.Body -ireplace '\[Identity\]', $ID
 
                 #CSV Mode, replace mention of new address
-                $Body= $Body -ireplace '\[OldMail\]', $OldMail
+                $Body= $Body -ireplace '\[OldMail\]', $OldID
 
                 # Replace LF with <BR>+LF for HTML messages
                 $Body= $Body -replace "`n","<br />`n"
@@ -626,10 +581,17 @@ process {
                 $InboxRule.Exceptions.ContainsSubjectStrings.Add( $Config.Subject)
                 $creaRule= New-Object Microsoft.Exchange.WebServices.Data.CreateRuleOperation[] 1
                 $creaRule[0]= $InboxRule
+
                 If ( $Force -or $PSCmdlet.ShouldProcess( ('Configure inbox rule "{1}" on mailbox {0}' -f $ID, $Config.Rule))) {
                     $EwsService.updateInboxRules( $creaRule, $true)
                 }
             }
         }
+    }
+}
+
+End {
+    If( $TrustAll) {
+        Set-SSLVerification -Enable
     }
 }
