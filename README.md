@@ -1,4 +1,4 @@
-# Apply-AutoResponderNotification
+# Set-AutoResponderNotification
 
 ## Getting Started
 
@@ -10,7 +10,6 @@
 
 ### Usage
 
-Examples:
 ```powershell
 $cred=Get-Credential
 .\Set-AutoResponderNotification.ps1 -Identity michel@contoso.com -OldMail michel@fabrikam.com -Server outlook.office365.com -TemplateFile .\Template.xml -Credential $cred
