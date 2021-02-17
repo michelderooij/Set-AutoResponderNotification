@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>  
+<config>
+  <rule>Contoso Autoresponder</rule>
+  <subject>Please update your email recipient to Contoso</subject>
+  <body>Dear Sender,
+
+Thank you for your message. Fabrikam is now a whole Contoso subsidiary, and the fabrikam.com e-mail address will change to contoso.com. Your e-mail was forwarded to my new e-mail address. 
+
+Please update contact information, distribution lists, etc. to update [OldMail] e-mail references with my new [Identity] e-mail address. 
+ 
+[logo] 
+The Contoso Corporation is a multinational business with its headquarters in Paris.</body>
+  <logo>Contoso.png</logo>
+</config>
