@@ -1,0 +1,8 @@
+# General
+.vscode
+*.DS_Store
+Create-SelfSignedCertificate.ps1
+*.pfx
+*.cer
+*.dll
+*.xml
