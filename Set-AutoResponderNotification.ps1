@@ -9,7 +9,7 @@
     ENTIRE RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS
     WITH THE USER.
 
-    Version 1.01, February 17th, 2021
+    Version 1.02, February 23th, 2021
 
     .DESCRIPTION
     This script will set an AutoResponder inbox rule on an Exchange mailbox. This can be used to inform relations and partners sending messages
@@ -40,6 +40,7 @@
     1.01    Removed CSVFile parameter
             Added Begin/Process/End block for pipeline processing
             Fixed bug in module loading
+    1.02    Fixed CSV example in help (command to match description)
 
     .PARAMETER Identity
     Specifies one or more e-mail addresses of mailboxes to process. Identity can also be passed through the pipeline (see examples).
@@ -150,7 +151,7 @@
     from the specified template file.
 
     .EXAMPLE
-    Import-CSV -Path Users.csv | .\Set-AutoResponderNotification.ps1 -Server outlook.office365.com -Impersonation -TemplateFile .\Template.xml -TenantId '1ab81a53-2c16-4f28-98f3-fd251f0459f3' -ClientId 'ea76025c-592d-43f1-91f4-2dec7161cc59' -Overwrite -CertificateFile .\AutoResponder.pfx -CertificatePassword (ConvertTo-SecureString 'P@ssw0rd' -Force -AsPlainText)
+    Import-CSV -Path Users.csv | .\Set-AutoResponderNotification.ps1 -Server outlook.office365.com -Impersonation -TemplateFile .\Template.xml -TenantId '1ab81a53-2c16-4f28-98f3-fd251f0459f3' -ClientId 'ea76025c-592d-43f1-91f4-2dec7161cc59' -Overwrite -CertificateThumbprint 'a909502dd82ae41433e6f83886b00d4277a32a7b'
 
     Configure autoresponder rule using Identity/OldMail properties from the CSV file. The tenant specified is authenticated against, 
     using specified application identity, as well as the certificate from the personal certificate store with the specified thumbprint. 
