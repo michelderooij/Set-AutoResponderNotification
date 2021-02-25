@@ -9,7 +9,7 @@
     ENTIRE RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS
     WITH THE USER.
 
-    Version 1.02, February 23th, 2021
+    Version 1.03, February 25th, 2021
 
     .DESCRIPTION
     This script will set an AutoResponder inbox rule on an Exchange mailbox. This can be used to inform relations and partners sending messages
@@ -41,6 +41,7 @@
             Added Begin/Process/End block for pipeline processing
             Fixed bug in module loading
     1.02    Fixed CSV example in help (command to match description)
+    1.03    Fixed verification of loading Microsoft.Identity.Client
 
     .PARAMETER Identity
     Specifies one or more e-mail addresses of mailboxes to process. Identity can also be passed through the pipeline (see examples).
@@ -349,7 +350,7 @@ begin {
     }
 
     Import-ModuleDLL -Name 'Microsoft.Exchange.WebServices' -FileName 'Microsoft.Exchange.WebServices.dll' -Package 'Exchange.WebServices.Managed.Api' -validateObjName 'Microsoft.Exchange.WebServices.Data.ExchangeVersion'
-    Import-ModuleDLL -Name 'Microsoft.Identity.Client' -FileName 'Microsoft.Identity.Client.dll' -Package 'Microsoft.Identity.Client' -validateObjName 'Microsoft.Identity.Client.ConfidentialClientApplicationBuilder'
+    Import-ModuleDLL -Name 'Microsoft.Identity.Client' -FileName 'Microsoft.Identity.Client.dll' -Package 'Microsoft.Identity.Client' -validateObjName 'Microsoft.Identity.Client.TokenCache'
 
     Try  {
         $Config= ([xml](Get-Content -Path $TemplateFile)).Config
