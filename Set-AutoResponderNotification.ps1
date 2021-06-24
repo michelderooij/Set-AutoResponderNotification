@@ -9,7 +9,7 @@
     ENTIRE RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS
     WITH THE USER.
 
-    Version 1.03, February 25th, 2021
+    Version 1.04, June 24th, 2021
 
     .DESCRIPTION
     This script will set an AutoResponder inbox rule on an Exchange mailbox. This can be used to inform relations and partners sending messages
@@ -42,6 +42,7 @@
             Fixed bug in module loading
     1.02    Fixed CSV example in help (command to match description)
     1.03    Fixed verification of loading Microsoft.Identity.Client
+    1.04    Fixed loading of module when using installed NuGet packages
 
     .PARAMETER Identity
     Specifies one or more e-mail addresses of mailboxes to process. Identity can also be passed through the pipeline (see examples).
@@ -278,10 +279,10 @@ begin {
             # OK
         }
         Else {
-           If( $Package) {
-               If( Get-Command -Name Get-Package -ErrorAction SilentlyContinue) {
-                    If( Get-Package -Name -ErrorAction SilentlyContinue) {
-                        $AbsoluteFileName= (Get-ChildItem -ErrorAction SilentlyContinue -Path (Split-Path -Parent (get-Package -Name $Package | -Object -Property Version -Descending | Select-Object -First 1).Source) -Filter $FileName -Recurse).FullName
+            If( $Package) {
+                If( Get-Command -Name Get-Package -ErrorAction SilentlyContinue) {
+                    If( Get-Package -Name $Package -ErrorAction SilentlyContinue) {
+                        $AbsoluteFileName= (Get-ChildItem -ErrorAction SilentlyContinue -Path (Split-Path -Parent (get-Package -Name $Package | Sort-Object -Property Version -Descending | Select-Object -First 1).Source) -Filter $FileName -Recurse).FullName
                     }
                 }
             }
